@@ -1,0 +1,4 @@
+include LICENSE README.md METHOD.md CONTRIBUTING.md SECURITY.md
+recursive-include docs *.md
+recursive-include examples *.py
+recursive-include tests *.py

@@ -1,0 +1,46 @@
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  tests-and-wheel:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m unittest discover -s tests -v
+      - run: python -m pip install build ruff==0.17.2
+      - run: ruff check recovery_under_interference tests examples
+      - run: ruff format --check recovery_under_interference tests examples
+      - run: python -m build
+      - name: Install and smoke test wheel outside checkout
+        shell: bash
+        run: |
+          python -m venv "$RUNNER_TEMP/recovery-wheel"
+          "$RUNNER_TEMP/recovery-wheel/bin/python" -m pip install --no-deps "$GITHUB_WORKSPACE"/dist/*.whl
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/recovery-wheel/bin/recovery-under-interference" demo --run-dir wheel-demo --scenario lost-ack --checkpoint-after 1
+          "$RUNNER_TEMP/recovery-wheel/bin/recovery-under-interference" resume wheel-demo/workflow --adapter local=wheel-demo/services.json
+          "$RUNNER_TEMP/recovery-wheel/bin/python" "$GITHUB_WORKSPACE/examples/compensate_order.py" wheel-example
+          "$RUNNER_TEMP/recovery-wheel/bin/python" -c 'from recovery_under_interference import RecoveryEngine; assert RecoveryEngine("wheel-demo/workflow").inspect()["complete"]'
+          "$RUNNER_TEMP/recovery-wheel/bin/python" "$GITHUB_WORKSPACE/examples/business_refund.py" wheel-business
+          "$RUNNER_TEMP/recovery-wheel/bin/python" "$GITHUB_WORKSPACE/examples/retire_replaced_plan.py" wheel-retirement
+          "$RUNNER_TEMP/recovery-wheel/bin/python" "$GITHUB_WORKSPACE/examples/sqlite_order.py" wheel-sqlite
+          "$RUNNER_TEMP/recovery-wheel/bin/python" -m unittest discover -s "$GITHUB_WORKSPACE/tests" -v

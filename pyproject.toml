@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "recovery-under-interference"
+dynamic = ["version"]
+description = "Durable adapter-driven compensation with explicit uncertain outcomes"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Hanbin Tan"}]
+keywords = ["saga", "compensation", "recovery", "idempotency", "journal", "sqlite"]
+dependencies = []
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Repository = "https://github.com/hskl18/recovery-under-interference"
+Issues = "https://github.com/hskl18/recovery-under-interference/issues"
+
+[project.scripts]
+recovery-under-interference = "recovery_under_interference.cli:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "recovery_under_interference.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["recovery_under_interference*"]
+
+[tool.setuptools.package-data]
+recovery_under_interference = ["py.typed"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
