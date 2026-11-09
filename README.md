@@ -9,6 +9,21 @@ It is a focused recovery library, not a forward workflow orchestrator or a gener
 The package also includes a separate deterministic policy simulator for studying recovery-time interference.
 Simulator scores do not establish the reliability of an external adapter or a production deployment.
 
+```mermaid
+flowchart TD
+    plan["Persisted recovery plan"] --> journal["Journal the attempt"]
+    journal --> reconcile{"Adapter reconciles the operation"}
+    reconcile -->|applied| receipt{"Validate the receipt"}
+    reconcile -->|not_applied| apply["Adapter applies the inverse"]
+    reconcile -->|unknown| uncertain["uncertain: recovery stops, visible in inspect"]
+    apply --> receipt
+    receipt -->|valid| next["Record it, then the next action in dependency order"]
+    receipt -->|invalid| uncertain
+    reconcile & apply -->|RetryableError| journal
+    reconcile & apply -->|PermissionDenied or Conflict| blocked["blocked: resolve with the provider, then retry"]
+    reconcile & apply -->|any other exception| uncertain
+```
+
 ## Install and run
 
 Python 3.11 or newer on a local POSIX filesystem is required.
