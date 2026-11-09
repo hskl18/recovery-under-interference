@@ -17,12 +17,17 @@ flowchart TD
     reconcile -->|not_applied| apply["Adapter applies the inverse"]
     reconcile -->|unknown| uncertain["uncertain: recovery stops, visible in inspect"]
     apply --> receipt
-    receipt -->|valid| next["Record it, then the next action in dependency order"]
+    receipt -->|valid, recorded| more{"Actions left?"}
     receipt -->|invalid| uncertain
-    reconcile & apply -->|RetryableError| journal
+    more -->|yes| journal
+    more -->|no| complete["complete"]
+    reconcile & apply -->|RetryableError, attempts left| journal
+    reconcile & apply -->|LockUnavailable| lock["lock_busy: the session ends, the action stays pending"]
     reconcile & apply -->|PermissionDenied or Conflict| blocked["blocked: resolve with the provider, then retry"]
     reconcile & apply -->|any other exception| uncertain
 ```
+
+*The path of one active workflow. A session also ends at `attempt_limit` or a requested checkpoint, a failed journal write stops it before the next step, and a retired plan never reaches an adapter; see [docs/RECOVERY.md](docs/RECOVERY.md).*
 
 ## Install and run
 
