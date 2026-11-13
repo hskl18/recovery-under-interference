@@ -9,23 +9,12 @@ It is a focused recovery library, not a forward workflow orchestrator or a gener
 The package also includes a separate deterministic policy simulator for studying recovery-time interference.
 Simulator scores do not establish the reliability of an external adapter or a production deployment.
 
-```mermaid
-flowchart TD
-    plan["Persisted recovery plan"] --> journal["Journal the attempt"]
-    journal --> reconcile{"Adapter reconciles the operation"}
-    reconcile -->|applied| receipt{"Validate the receipt"}
-    reconcile -->|not_applied| apply["Adapter applies the inverse"]
-    reconcile -->|unknown| uncertain["uncertain: recovery stops, visible in inspect"]
-    apply --> receipt
-    receipt -->|valid, recorded| more{"Actions left?"}
-    receipt -->|invalid| uncertain
-    more -->|yes| journal
-    more -->|no| complete["complete"]
-    reconcile & apply -->|RetryableError, attempts left| journal
-    reconcile & apply -->|LockUnavailable| lock["lock_busy: the session ends, the action stays pending"]
-    reconcile & apply -->|PermissionDenied or Conflict| blocked["blocked: resolve with the provider, then retry"]
-    reconcile & apply -->|any other exception| uncertain
-```
+## Architecture
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/architecture-dark.svg">
+  <img alt="The recovery loop: a persisted recovery plan journals each attempt, the adapter reconciles the operation and applies the inverse when it was not applied, and the receipt is validated and recorded; the next action is journaled until none are left, when the workflow is complete. An unknown result or an invalid receipt stops as uncertain, visible in inspect. Errors raised by reconcile or apply go to one adapter-error check: a RetryableError retries while attempts remain; LockUnavailable ends the session as lock_busy with the action still pending; PermissionDenied or Conflict marks the action blocked until it is resolved with the provider and retried; any other exception stops as uncertain." src="docs/architecture-light.svg">
+</picture>
 
 *The path of one active workflow. A session also ends at `attempt_limit` or a requested checkpoint, a failed journal write stops it before the next step, and a retired plan never reaches an adapter; see [docs/RECOVERY.md](docs/RECOVERY.md).*
 
