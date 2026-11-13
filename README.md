@@ -13,7 +13,7 @@ Simulator scores do not establish the reliability of an external adapter or a pr
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/architecture-dark.svg">
-  <img alt="The recovery loop: a persisted recovery plan journals each attempt, the adapter reconciles the operation and applies the inverse when it was not applied, and the receipt is validated before the next action. An unknown result or an invalid receipt stops as uncertain; a RetryableError retries while attempts remain; LockUnavailable ends the session as lock_busy with the action still pending; PermissionDenied or Conflict marks it blocked; any other exception stops as uncertain." src="docs/architecture-light.svg">
+  <img alt="The recovery loop: a persisted recovery plan journals each attempt, the adapter reconciles the operation and applies the inverse when it was not applied, and the receipt is validated and recorded; the next action is journaled until none are left, when the workflow is complete. An unknown result or an invalid receipt stops as uncertain, visible in inspect. Errors raised by reconcile or apply go to one adapter-error check: a RetryableError retries while attempts remain; LockUnavailable ends the session as lock_busy with the action still pending; PermissionDenied or Conflict marks the action blocked until it is resolved with the provider and retried; any other exception stops as uncertain." src="docs/architecture-light.svg">
 </picture>
 
 *The path of one active workflow. A session also ends at `attempt_limit` or a requested checkpoint, a failed journal write stops it before the next step, and a retired plan never reaches an adapter; see [docs/RECOVERY.md](docs/RECOVERY.md).*
