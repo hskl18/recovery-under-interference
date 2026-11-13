@@ -1,0 +1,18 @@
+flowchart TD
+  plan["Persisted recovery plan"] --> journal["Journal the attempt"]
+  journal --> reconcile{"Adapter reconciles<br/>the operation"}
+  reconcile -->|"not_applied"| apply["Adapter applies<br/>the inverse"]
+  reconcile -->|"applied"| receipt{"Validate<br/>the receipt"}
+  apply --> receipt
+  receipt -->|"valid, recorded"| more{"Actions left?"}
+  more -->|"yes"| journal
+  more -->|"no"| complete["complete"]
+  reconcile -->|"unknown"| uncertain["uncertain<br/>recovery stops,<br/>visible in inspect"]
+  receipt -->|"invalid"| uncertain
+  reconcile -.->|"raises"| err{"Adapter error"}
+  apply -.->|"raises"| err
+  err -->|"RetryableError,<br/>attempts left"| journal
+  err -->|"LockUnavailable"| lock["lock_busy<br/>the session ends,<br/>the action stays pending"]
+  err -->|"PermissionDenied<br/>or Conflict"| blocked["blocked<br/>resolve with the provider,<br/>then retry"]
+  err -->|"any other exception"| uncertain
+%% Edit this file; the owner renders architecture-light.svg and architecture-dark.svg from it with a shared theme.
